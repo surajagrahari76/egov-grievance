@@ -10,7 +10,7 @@ from app.models.grievance import Attachment, Grievance, StatusHistory
 from app.models.organization import Department, Ward
 from app.models.user import User
 from app.schemas.grievance import GrievanceCreate
-from app.services.classifier import classify_category
+from app.services.classifier import classify_department
 from app.services.storage_service import save_validated_upload
 
 
@@ -43,14 +43,20 @@ async def create_grievance(
             detail="Login is required for non-anonymous complaints, or select anonymous filing",
         )
 
-    manual_category = payload.category.strip().lower() if payload.category and payload.category.strip() else None
-    if manual_category:
-        category = manual_category
+    dept_id = None
+    category = (payload.category or "").strip().lower()
+    if category:
+        dept = db.query(Department).filter(Department.code == category).first()
+        if dept:
+            dept_id = dept.id
     else:
-        category = classify_category(payload.title, payload.text) or "general"
-
-    dept = db.query(Department).filter(Department.code == category).first()
-    dept_id = dept.id if dept else None
+        dept = classify_department(db, f"{payload.title} {payload.text}")
+        if dept:
+            dept_id = dept.id
+            category = dept.code
+        else:
+            category = "general"
+            dept_id = None
 
     if payload.ward_id is not None:
         ward = db.query(Ward).filter(Ward.id == payload.ward_id).first()

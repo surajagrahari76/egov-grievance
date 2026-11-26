@@ -1,5 +1,7 @@
 import re
 from typing import Dict, Tuple
+from sqlalchemy.orm import Session
+from app.models.organization import Department
 
 # Department codes match backend/app/seed.py DEPARTMENTS exactly.
 DEPARTMENT_KEYWORDS: Dict[str, Tuple[str, ...]] = {
@@ -219,3 +221,15 @@ def classify_category(title: str, text: str) -> str | None:
             best_code = dept_code
 
     return best_code if best_score > 0 else None
+
+
+def classify_department(db: Session, text: str) -> Department | None:
+    """Classify text into an active Department ORM object, or None if no keywords match."""
+    dept_code = classify_category("", text)
+    if not dept_code:
+        return None
+    return (
+        db.query(Department)
+        .filter(Department.code == dept_code, Department.is_active.is_(True))
+        .first()
+    )
