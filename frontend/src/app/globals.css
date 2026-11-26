@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light dark;
+  --bg-page-light: #f8fafc;
+  --bg-page-dark: #0b1120;
+  --bg-card-light: #ffffff;
+  --bg-card-dark: #111827;
+  --text-main-light: #0f172a;
+  --text-main-dark: #f1f5f9;
+  --text-muted-light: #475569;
+  --text-muted-dark: #94a3b8;
+  --border-light: #cbd5e1;
+  --border-dark: #334155;
+  --brand-light: #1e3a8a;
+  --brand-dark: #60a5fa;
+  --brand-text-light: #ffffff;
+  --brand-text-dark: #0b1120;
+
+  --bg-page: var(--bg-page-light);
+  --bg-card: var(--bg-card-light);
+  --text-main: var(--text-main-light);
+  --text-muted: var(--text-muted-light);
+  --border-color: var(--border-light);
+  --brand: var(--brand-light);
+  --brand-text: var(--brand-text-light);
+
+  accent-color: var(--brand);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-page: var(--bg-page-dark);
+    --bg-card: var(--bg-card-dark);
+    --text-main: var(--text-main-dark);
+    --text-muted: var(--text-muted-dark);
+    --border-color: var(--border-dark);
+    --brand: var(--brand-dark);
+    --brand-text: var(--brand-text-dark);
+  }
+}
+
+:root:has(> head > meta[name="color-scheme"][content="dark"]) {
+  color-scheme: dark;
+  --bg-page: var(--bg-page-dark);
+  --bg-card: var(--bg-card-dark);
+  --text-main: var(--text-main-dark);
+  --text-muted: var(--text-muted-dark);
+  --border-color: var(--border-dark);
+  --brand: var(--brand-dark);
+  --brand-text: var(--brand-text-dark);
+}
+
+:root:has(> head > meta[name="color-scheme"][content="light"]) {
+  color-scheme: light;
+  --bg-page: var(--bg-page-light);
+  --bg-card: var(--bg-card-light);
+  --text-main: var(--text-main-light);
+  --text-muted: var(--text-muted-light);
+  --border-color: var(--border-light);
+  --brand: var(--brand-light);
+  --brand-text: var(--brand-text-light);
+}
+
+body {
+  background-color: var(--bg-page);
+  color: var(--text-main);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+}
+
+.gov-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+}
+
+.gov-input {
+  width: 100%;
+  font: inherit;
+  font-size: max(1rem, 1em);
+  min-height: 48px;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card);
+  color: var(--text-main);
+}
+
+.gov-input:focus-visible,
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+}
+
+:is(.gov-input:user-invalid) {
+  border-color: #dc2626;
+}
+
+.visually-hidden:where(:not(:focus-within, :active)) {
+  position: absolute !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
