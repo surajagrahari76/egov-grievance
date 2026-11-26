@@ -1,6 +1,25 @@
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api/v1";
 
+export const BACKEND_ORIGIN = API_BASE.replace(/\/api\/v1\/?$/, "");
+
+export const STAFF_ROLES = ["officer", "dept_head", "district_head", "admin"] as const;
+
+export function isStaffRole(role?: string | null): boolean {
+  return Boolean(role && (STAFF_ROLES as readonly string[]).includes(role));
+}
+
+export interface OfficerSummary {
+  id: number;
+  user_id: number;
+  name: string;
+  email?: string | null;
+  dept_id: number;
+  ward_id?: number | null;
+  level: string;
+  designation: string;
+}
+
 export interface User {
   id: number;
   name: string;
@@ -244,4 +263,128 @@ export async function trackGrievance(ticketId: string, anonymousCode?: string) {
   );
   if (!res.ok) throw new Error(await parseError(res));
   return res.json() as Promise<PublicTrackResponse>;
+}
+
+export async function fetchStaffGrievances(params: {
+  page?: number;
+  page_size?: number;
+  status?: string;
+  dept_id?: string;
+  ward_id?: string;
+  priority?: string;
+}) {
+  const token = getToken();
+  if (!token) throw new Error("Staff authentication required");
+  const qs = new URLSearchParams({
+    page: String(params.page || 1),
+    page_size: String(params.page_size || 20),
+  });
+  if (params.status) qs.set("status", params.status);
+  if (params.dept_id) qs.set("dept_id", params.dept_id);
+  if (params.ward_id) qs.set("ward_id", params.ward_id);
+  if (params.priority) qs.set("priority", params.priority);
+
+  const res = await fetch(`${API_BASE}/officer/grievances?${qs.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(await parseError(res));
+  return res.json() as Promise<PaginatedGrievances>;
+}
+
+export async function fetchStaffGrievanceDetail(ticketId: string) {
+  const token = getToken();
+  if (!token) throw new Error("Staff authentication required");
+  const res = await fetch(
+    `${API_BASE}/officer/grievances/${encodeURIComponent(ticketId)}`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) throw new Error(await parseError(res));
+  return res.json() as Promise<Grievance>;
+}
+
+export async function updateStaffGrievanceStatus(
+  ticketId: string,
+  status: string,
+  remarks?: string,
+  assignedOfficerId?: number
+) {
+  const token = getToken();
+  if (!token) throw new Error("Staff authentication required");
+  const res = await fetch(
+    `${API_BASE}/officer/grievances/${encodeURIComponent(ticketId)}/status`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        status,
+        remarks: remarks?.trim() || undefined,
+        assigned_officer_id: assignedOfficerId || undefined,
+      }),
+    }
+  );
+  if (!res.ok) throw new Error(await parseError(res));
+  return res.json() as Promise<Grievance>;
+}
+
+export async function assignStaffGrievance(
+  ticketId: string,
+  officerId?: number,
+  remarks?: string
+) {
+  const token = getToken();
+  if (!token) throw new Error("Staff authentication required");
+  const res = await fetch(
+    `${API_BASE}/officer/grievances/${encodeURIComponent(ticketId)}/assign`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        officer_id: officerId || undefined,
+        remarks: remarks?.trim() || undefined,
+      }),
+    }
+  );
+  if (!res.ok) throw new Error(await parseError(res));
+  return res.json() as Promise<Grievance>;
+}
+
+export async function reassignStaffDepartment(
+  ticketId: string,
+  deptCode: string,
+  remarks?: string
+) {
+  const token = getToken();
+  if (!token) throw new Error("Staff authentication required");
+  const res = await fetch(
+    `${API_BASE}/officer/grievances/${encodeURIComponent(ticketId)}/reassign`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        dept_code: deptCode,
+        remarks: remarks?.trim() || undefined,
+      }),
+    }
+  );
+  if (!res.ok) throw new Error(await parseError(res));
+  return res.json() as Promise<Grievance>;
+}
+
+export async function fetchOfficerTeam(): Promise<OfficerSummary[]> {
+  const token = getToken();
+  if (!token) throw new Error("Staff authentication required");
+  const res = await fetch(`${API_BASE}/officer/team`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(await parseError(res));
+  return res.json();
 }

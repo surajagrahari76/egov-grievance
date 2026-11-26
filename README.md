@@ -18,6 +18,7 @@ An AI-ready public grievance redressal portal enabling citizens to file, attach 
   - Anonymous complaint filing generating a private `ANON-XXXXXXXX` tracking code
   - Public ticket tracking without login (`/track`) showing a 5-stage progress timeline (`Submitted` → `Assigned` → `In Progress` → `Resolved` → `Closed`)
   - Authenticated `"My Complaints"` view with status filtering and pagination (`/my-complaints`)
+  - Protected Officer & Admin Dashboard (`/officer` and `/officer/[ticketId]`) with department-scoped complaint queue, multi-filter search (status, department, ward, priority), status transition dropdown, officer assignment, and department reassignment
   - Light/dark theme toggle respecting system `prefers-color-scheme`
 - **Backend & Governance Core (FastAPI + SQLAlchemy)**:
   - Multilingual rule-based department auto-detection (`water`, `electricity`, `roads`, `sanitation`, `health`, `police`, or `general` fallback)
@@ -25,6 +26,7 @@ An AI-ready public grievance redressal portal enabling citizens to file, attach 
   - JWT authentication with `bcrypt` password hashing and RBAC roles (`citizen`, `officer`, `dept_head`, `district_head`, `admin`)
   - PII-masked JSON structured logging (redacts Indian phone numbers and email addresses in logs)
   - Automatic SQLite schema creation and idempotent seed data on backend startup, alongside Alembic migrations
+  - Staff workflow APIs for department-scoped grievance listing, assignment, status transitions (`submitted` → `assigned` → `in_progress` → `resolved` → `closed`), department reassignment, and in-app + mocked SMS/Email notifications
 
 ---
 
@@ -74,18 +76,24 @@ E-Governance Grievance/
 │   │   ├── routers/
 │   │   │   ├── auth.py
 │   │   │   ├── grievances.py
+│   │   │   ├── notifications.py
+│   │   │   ├── officer.py
 │   │   │   └── reference.py
 │   │   ├── schemas/
 │   │   │   ├── auth.py
-│   │   │   └── grievance.py
+│   │   │   ├── grievance.py
+│   │   │   └── officer.py
 │   │   └── services/
 │   │       ├── auth_service.py
 │   │       ├── classifier.py          # Rule-based EN/HI/Hinglish department classifier
 │   │       ├── grievance_service.py
+│   │       ├── notification_service.py
+│   │       ├── officer_service.py
 │   │       └── storage_service.py
 │   └── tests/
 │       ├── conftest.py
 │       ├── test_classifier.py
+│       ├── test_officer_flow.py
 │       └── test_phase1.py
 └── frontend/
     ├── next.config.ts
@@ -100,7 +108,10 @@ E-Governance Grievance/
         │   ├── login/page.tsx         # Citizen OTP + Staff login
         │   ├── submit/page.tsx        # File complaint form
         │   ├── track/page.tsx         # Public ticket tracker
-        │   └── my-complaints/page.tsx # Citizen complaints dashboard
+        │   ├── my-complaints/page.tsx # Citizen complaints dashboard
+        │   └── officer/
+        │       ├── page.tsx           # Protected staff queue & filters
+        │       └── [ticketId]/page.tsx # Staff detail, status update & reassignment
         ├── components/
         │   ├── Navbar.tsx
         │   └── StatusTimeline.tsx
@@ -224,6 +235,14 @@ Interactive Swagger documentation is available at **[http://127.0.0.1:8000/docs]
 | `GET` | `/api/v1/grievances/track/{ticket_id}` | Public ticket tracking (supports `?anonymous_code=ANON-...`) |
 | `GET` | `/api/v1/grievances/{ticket_id}` | Detailed grievance view (owner-scoped for citizens) |
 | `GET` | `/api/v1/grievances/rbac-check/staff-only` | RBAC verification endpoint for staff roles |
+| `GET` | `/api/v1/officer/grievances` | Staff priority-sorted grievance queue (filterable by status, dept, ward, priority) |
+| `GET` | `/api/v1/officer/grievances/{ticket_id}` | Staff grievance detail view (department-scoped for officers/dept heads) |
+| `POST` | `/api/v1/officer/grievances/{ticket_id}/assign` | Assign grievance to an officer (`submitted` → `assigned`) |
+| `PATCH` | `/api/v1/officer/grievances/{ticket_id}/status` | Update status (`submitted` → `assigned` → `in_progress` → `resolved` → `closed`) |
+| `POST` | `/api/v1/officer/grievances/{ticket_id}/reassign` | Reassign grievance to another department |
+| `GET` | `/api/v1/officer/team` | List available officers for assignment |
+| `GET` | `/api/v1/notifications` | List in-app notifications for the current user |
+| `PATCH` | `/api/v1/notifications/{notification_id}/read` | Mark an in-app notification as read |
 | `GET` | `/api/v1/reference/departments` | List active departments |
 | `GET` | `/api/v1/reference/wards` | List municipal wards/zones |
 
@@ -270,7 +289,6 @@ npm run build
 ## Roadmap
 
 - [ ] Real SMS OTP gateway integration (replace mock console OTP)
-- [ ] Officer and Admin dashboards in the frontend (status updates, SLA escalation matrix, analytics)
 - [ ] ML-based complaint classification, semantic duplicate detection, and chatbot/RAG (`requirements-ml.txt`)
 - [ ] Production deployment setup (Docker Compose, PostgreSQL, Redis, CI/CD)
 

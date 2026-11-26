@@ -8,7 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import get_settings
 from app.core.database import Base, SessionLocal, engine
 from app.core.logging import configure_logging
-from app.routers import auth, grievances, reference
+from app.routers import auth, grievances, notifications, officer, reference
 from app.seed import seed_database
 
 settings = get_settings()
@@ -60,6 +60,8 @@ app.mount("/uploads", StaticFiles(directory=str(upload_path)), name="uploads")
 
 app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
 app.include_router(grievances.router, prefix=settings.API_V1_PREFIX)
+app.include_router(officer.router, prefix=settings.API_V1_PREFIX)
+app.include_router(notifications.router, prefix=settings.API_V1_PREFIX)
 app.include_router(reference.router, prefix=settings.API_V1_PREFIX)
 
 

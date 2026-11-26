@@ -109,3 +109,55 @@ a:focus-visible {
   border: 0 !important;
   white-space: nowrap !important;
 }
+
+.table-wrapper {
+  overflow: auto;
+  max-inline-size: 100%;
+  container-type: inline-size;
+}
+
+.gov-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.gov-table thead {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+}
+
+@container (width < 640px) {
+  .gov-table,
+  .gov-table thead,
+  .gov-table tbody,
+  .gov-table tr,
+  .gov-table th,
+  .gov-table td {
+    display: block;
+  }
+
+  .gov-table thead {
+    display: none;
+  }
+
+  .gov-table tbody tr {
+    margin-block-end: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+    background-color: var(--bg-card);
+  }
+
+  .gov-table tbody td {
+    padding: 0.35rem 0;
+    border: 0;
+  }
+
+  .gov-table tbody td[data-label]::before {
+    content: attr(data-label) ": ";
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+}

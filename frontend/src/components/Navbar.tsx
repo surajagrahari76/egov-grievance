@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ShieldCheck, Sun, Moon, LogOut, UserCircle2 } from "lucide-react";
-import { clearAuth, getStoredUser, User } from "@/lib/api";
+import { clearAuth, getStoredUser, isStaffRole, User } from "@/lib/api";
 
 export function Navbar() {
   const [user, setUser] = useState<User | null>(null);
@@ -78,6 +78,14 @@ export function Navbar() {
           <Link href="/my-complaints" className="px-3 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800">
             My Complaints
           </Link>
+          {isStaffRole(user?.role) && (
+            <Link
+              href="/officer"
+              className="px-3 py-2 rounded-md bg-amber-100 text-amber-950 dark:bg-amber-950/60 dark:text-amber-200 hover:bg-amber-200 dark:hover:bg-amber-900/60 font-semibold"
+            >
+              Officer Portal
+            </Link>
+          )}
 
           <button
             type="button"

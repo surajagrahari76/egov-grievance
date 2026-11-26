@@ -3,7 +3,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import HTTPException, UploadFile, status
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.core.security import generate_anonymous_code, hash_token
 from app.models.grievance import Attachment, Grievance, StatusHistory
@@ -123,8 +123,8 @@ def get_grievance_by_ticket(db: Session, ticket_id: str) -> Grievance:
     grievance = (
         db.query(Grievance)
         .options(
-            joinedload(Grievance.attachments),
-            joinedload(Grievance.status_history),
+            selectinload(Grievance.attachments),
+            selectinload(Grievance.status_history),
             joinedload(Grievance.department),
             joinedload(Grievance.ward),
         )
@@ -146,8 +146,8 @@ def list_user_grievances(
     query = (
         db.query(Grievance)
         .options(
-            joinedload(Grievance.attachments),
-            joinedload(Grievance.status_history),
+            selectinload(Grievance.attachments),
+            selectinload(Grievance.status_history),
             joinedload(Grievance.department),
             joinedload(Grievance.ward),
         )

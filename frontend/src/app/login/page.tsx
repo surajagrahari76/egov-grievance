@@ -1,12 +1,22 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
-import { passwordLogin, requestOtp, saveAuth, verifyOtp } from "@/lib/api";
+import { FormEvent, Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  isStaffRole,
+  passwordLogin,
+  requestOtp,
+  saveAuth,
+  verifyOtp,
+} from "@/lib/api";
 
-export default function LoginPage() {
+function LoginFormContent() {
   const router = useRouter();
-  const [mode, setMode] = useState<"citizen" | "staff">("citizen");
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get("tab") === "staff" ? "staff" : "citizen";
+  const nextPath = searchParams.get("next");
+
+  const [mode, setMode] = useState<"citizen" | "staff">(initialTab);
 
   // Citizen OTP state
   const [phone, setPhone] = useState("9876543210");
@@ -22,6 +32,12 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (searchParams.get("tab") === "staff") {
+      setMode("staff");
+    }
+  }, [searchParams]);
 
   const handleRequestOtp = async (e: FormEvent) => {
     e.preventDefault();
@@ -60,7 +76,11 @@ export default function LoginPage() {
     try {
       const res = await passwordLogin(email, password);
       saveAuth(res.access_token, res.user);
-      router.push("/my-complaints");
+      if (isStaffRole(res.user.role)) {
+        router.push(nextPath && nextPath.startsWith("/") ? nextPath : "/officer");
+      } else {
+        router.push("/my-complaints");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -80,7 +100,11 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <div role="tablist" aria-label="Login type" className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-slate-100 dark:bg-slate-800">
+        <div
+          role="tablist"
+          aria-label="Login type"
+          className="grid grid-cols-2 gap-2 p-1 rounded-lg bg-slate-100 dark:bg-slate-800"
+        >
           <button
             type="button"
             role="tab"
@@ -116,7 +140,10 @@ export default function LoginPage() {
         </div>
 
         {error && (
-          <div role="alert" className="p-3 rounded-lg bg-red-50 dark:bg-red-950/50 border border-red-300 dark:border-red-800 text-sm text-red-800 dark:text-red-200">
+          <div
+            role="alert"
+            className="p-3 rounded-lg bg-red-50 dark:bg-red-950/50 border border-red-300 dark:border-red-800 text-sm text-red-800 dark:text-red-200"
+          >
             {error}
           </div>
         )}
@@ -173,7 +200,10 @@ export default function LoginPage() {
           ) : (
             <form onSubmit={handleVerifyOtp} className="space-y-4">
               {otpHint && (
-                <div role="status" className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200">
+                <div
+                  role="status"
+                  className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200"
+                >
                   <strong>MOCK SMS GATEWAY:</strong> {otpHint}
                 </div>
               )}
@@ -267,6 +297,7 @@ export default function LoginPage() {
 
             <div className="text-xs p-3 rounded-lg bg-slate-100 dark:bg-slate-800 space-y-1">
               <p className="font-semibold">Demo Staff Accounts:</p>
+              <p>District Head: <code>district@demo.gov.in</code> / <code>Officer123!</code></p>
               <p>Officer (Water): <code>officer.water@demo.gov.in</code> / <code>Officer123!</code></p>
               <p>Admin: <code>admin@demo.gov.in</code> / <code>Admin123!</code></p>
             </div>
@@ -276,11 +307,19 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full py-3 rounded-lg bg-blue-900 text-white hover:bg-blue-800 dark:bg-blue-500 dark:text-slate-950 font-semibold min-h-[48px] disabled:opacity-60"
             >
-              {loading ? "Signing In..." : "Sign In"}
+              {loading ? "Signing In..." : "Sign In to Staff Portal"}
             </button>
           </form>
         )}
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="text-sm text-slate-500">Loading sign-in form...</div>}>
+      <LoginFormContent />
+    </Suspense>
   );
 }
